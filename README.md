@@ -44,6 +44,7 @@ A cli to browse and watch anime (alone AND with friends). This tool scrapes the 
 - [Uninstall](#uninstall)
 - [Dependencies](#dependencies)
   - [Ani-Skip](#ani-skip)
+  - [TV shows and movies (lobster)](#tv-shows-and-movies-lobster)
 - [FAQ](#faq)
 - [Homies](#homies)
 - [Contribution Guidelines](./CONTRIBUTING.md)
@@ -63,6 +64,9 @@ For any other breaking issue, then make sure you are on **latest version** by ty
 If after this the issue persists then open an issue.
 
 ## Install
+
+The native packages, scoop and brew below install upstream ani-cli, which has no tv shows and movies.
+To get ani-cli-grokked with its bundled [lobster](#tv-shows-and-movies-lobster), [install from source](#installing-from-source).
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/ani-cli.svg?minversion=4.14)](https://repology.org/project/ani-cli/versions)
 
@@ -443,10 +447,12 @@ This can be achieved from NixManager as well, my personal recommendation is to u
 Install dependencies [(See below)](#dependencies)
 
 ```sh
-git clone "https://github.com/pystardust/ani-cli.git"
-sudo cp ani-cli/ani-cli /usr/local/bin
-rm -rf ani-cli
+git clone --depth 1 "https://github.com/AnvayDev/ani-cli-grokked.git"
+sudo cp ani-cli-grokked/ani-cli ani-cli-grokked/lobster /usr/local/bin
+rm -rf ani-cli-grokked
 ```
+
+On Termux copy both files into `$PREFIX/bin` (without sudo), on Steam Deck into `~/.local/bin`. On macOS lobster also needs GNU sed: `brew install gnu-sed`.
 
 ## Uninstall
 
@@ -481,7 +487,7 @@ scoop uninstall ani-cli
 ```
 * Linux:
 ```sh
-sudo rm "/usr/local/bin/ani-cli"
+sudo rm "/usr/local/bin/ani-cli" "/usr/local/bin/lobster"
 ```
 * Mac:
 ```sh
@@ -534,6 +540,7 @@ apk del grep sed curl fzf git ffmpeg ncurses
 - fzf - User interface
 - ani-skip (optional, for auto-skipping anime intros)
 - patch - Self updating
+- lobster - TV shows and movies (bundled, on macOS it needs gnu-sed)
 
 ### Ani-Skip
 
@@ -544,6 +551,15 @@ For install instructions visit [ani-skip](https://github.com/synacktraa/ani-skip
 Ani-skip uses the external lua script function of mpv and as such – for now – only works with mpv.
 
 **Warning:** For now, ani-skip does **not** seem to work under Windows.
+
+### TV shows and movies (lobster)
+
+Before searching, ani-cli asks whether you want to watch anime or a tv show or movie. Tv shows and movies are handed over to [lobster](https://github.com/justchokingaround/lobster), which ships next to ani-cli in this repo.
+
+- Skip the question with `--anime`, `--tv` or `--movie`, or set a default with `ANI_CLI_MEDIA=anime|tv|movie`. Anime-only options such as `-e` or `--dub` skip it too.
+- The search query, `-c`, `-d`, `-q`, `-s` and `--rofi` are passed on to lobster.
+- lobster keeps its own history and config (player, subtitle language, ...) in `~/.config/lobster/lobster_config.sh`.
+- Update lobster with `lobster -u`, `ani-cli -U` only updates ani-cli.
 
 ## FAQ
 <details>

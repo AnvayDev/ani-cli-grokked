@@ -13,6 +13,10 @@ This tool scrapes the site hianime.
 .PD 0
 .P
 .PD
+Before searching it asks whether to watch anime or a tv show or movie, which are handed over to lobster (shipped next to ani-cli).
+.PD 0
+.P
+.PD
 \f[B]ani-cli\f[R] without options defaults to iina on macOS, flatpak mpv on Steamdeck, mpv apk on android, vlc on iOS and mpv media player everywhere else.
 .SH OPTIONS
 .TP
@@ -69,6 +73,12 @@ Don't detach the player (useful for in-terminal playback, mpv only)
 .TP
 \fB\--exit-after-play\fR
 Exit the player, and return the player exit code (useful for non interactive scenarios, mpv only)
+.TP
+\fB\--anime\fR
+Watch anime without being asked first.
+.TP
+\fB\--tv | --movie\fR
+Watch a tv show or movie without being asked first. The search query, -c, -d, -q, -s and --rofi are passed on to lobster.
 .PP
 .SH
 ENVIRONMENT VARIABLES
@@ -116,6 +126,12 @@ Controls if the player is detached from the main process for playback, which can
 .TP
 \fBANI_CLI_EXIT_AFTER_PLAY\fR
 Controls if the menu comes up after the player is spawned, potentially useful in non-interactive scenarios or with ANI_CLI_NO_DETACH. Can be 0 (disabled) or 1 (enabled). Default is 0.
+.TP
+\fBANI_CLI_MEDIA\fR
+Skips the question what to watch. Can be anime, tv or movie (tv and movie both start lobster). Anime-only options such as -e or --dub always mean anime. Default is to ask.
+.TP
+\fBANI_CLI_LOBSTER\fR
+Path to the lobster script used for tv shows and movies. Default is the lobster next to ani-cli, then the one in PATH.
 .PP
 .SH EPISODE SELECTION
 .PP
