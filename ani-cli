@@ -1,6 +1,6 @@
 #!/bin/sh
 
-version_number="5.1.4"
+version_number="5.2.0"
 
 # UI
 
@@ -89,6 +89,10 @@ help_info() {
         Display a countdown to the next episode
       -U, --update
         Update the script
+      --anime
+        Watch anime without being asked first
+      --tv, --movie
+        Watch a tv show or movie without being asked first (hands over to lobster)
     Some example usages:
       %s -q 720p banana fish
       %s --skip -S 2 one piece
@@ -96,7 +100,8 @@ help_info() {
       %s --vlc cyberpunk edgerunners -q 1080p -e 4
       %s blue lock -e 5-6
       %s -e \"5 6\" blue lock
-    \n" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}"
+      %s --movie fight club
+    \n" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}"
     exit 0
 }
 
@@ -109,7 +114,7 @@ version_info() {
 
 update_script() {
     info "[branch:$branch] Checking for Update.."
-    update="$($curl_exe --fail-with-body -sL -A "$agent" "https://raw.githubusercontent.com/pystardust/ani-cli/$branch/ani-cli")" || die "[branch:$branch] Connection error: $update"
+    update="$($curl_exe --fail-with-body -sL -A "$agent" "https://raw.githubusercontent.com/AnvayDev/ani-cli-grokked/$branch/ani-cli")" || die "[branch:$branch] Connection error: $update"
     new_version="$(printf "%s" "$update" | sed -nE 's|^version_number="([^"]+)"$|\1|p')"
     [ -z "$new_version" ] && die "[branch:$branch] Invalid response."
     printf "%s" "$update" | grep -q "^version_number" || die "[branch:$branch] Invalid response."
@@ -436,6 +441,36 @@ play() {
     [ "$player_function" != "debug" ] && [ "$player_function" != "download" ] && tput rc && tput ed
 }
 
+# TV SHOWS AND MOVIES (lobster)
+
+# asks what to watch unless flags or ANI_CLI_MEDIA already decided it, anime carries on in ani-cli
+choose_media() {
+    [ -z "$media" ] && [ "$anime_only" = 1 ] && media="anime"
+    [ -z "$media" ] && media="$media_default"
+    [ -z "$media" ] && media=$(printf "anime\ntv show or movie\n" | menu "What do you want to watch? " "" "$menu_extra_flags")
+    case "$media" in
+        anime) ;;
+        tv* | movie*) launch_lobster ;;
+        "") exit 1 ;;
+        *) die "Unknown media type: $media (valid are anime, tv and movie)" ;;
+    esac
+}
+
+# replaces ani-cli with lobster (github.com/billmal071/lobster), translating the options both of them understand
+launch_lobster() {
+    lobster_exe=$(dep_ch_failover "${ANI_CLI_LOBSTER:-lobster}") || die "Program lobster not found, it is needed for tv shows and movies. Install it from https://github.com/billmal071/lobster"
+    set --
+    [ "$player_function" = "download" ] && set -- "$@" -d "$download_dir"
+    # lobster wants a bare resolution, best and worst are left to its config
+    _quality="${quality%p}"
+    [ "$_quality" -eq "$_quality" ] 2>/dev/null && set -- "$@" -q "$_quality"
+    [ "$source" = "history" ] && exec "$lobster_exe" history "$@"
+    # ani-cli keeps spaces in the query as +
+    _lobster_query=$(printf "%s" "$query" | sed 's|+| |g')
+    [ -n "$_lobster_query" ] && set -- "$@" -- "$_lobster_query"
+    exec "$lobster_exe" "$@"
+}
+
 # MAIN
 
 # setup
@@ -451,6 +486,7 @@ mode="${ANI_CLI_MODE:-sub}"
 download_dir="${ANI_CLI_DOWNLOAD_DIR:-.}"
 log_episode="${ANI_CLI_LOG:-1}"
 quality="${ANI_CLI_QUALITY:-best}"
+media_default="${ANI_CLI_MEDIA:-}"
 
 curl_exe=$(dep_ch_failover "curl_firefox135,curl_chrome136,curl_chrome116,curl_ff117,curl") || die "Program curl not found"
 
@@ -517,6 +553,7 @@ while [ $# -gt 0 ]; do
         -S | --select-nth)
             [ $# -lt 2 ] && die "missing argument!"
             index="$2"
+            anime_only=1
             shift
             ;;
         -c | --continue) source=history ;;
@@ -540,15 +577,17 @@ while [ $# -gt 0 ]; do
         -e | --episode | -r | --range)
             [ $# -lt 2 ] && die "missing argument!"
             ep_no="$2"
+            anime_only=1
             shift
             ;;
-        --dub) mode="dub" ;;
+        --dub) mode="dub" && anime_only=1 ;;
         --no-detach) no_detach=1 ;;
         --exit-after-play) exit_after_play=1 && no_detach=1 ;;
         --rofi) menu_program=rofi ;;
         --dmenu) menu_program=dmenu ;;
-        --skip) skip_intro=1 ;;
-        -N | --nextep-countdown) source=nextep ;;
+        --skip) skip_intro=1 && anime_only=1 ;;
+        -N | --nextep-countdown) source=nextep && anime_only=1 ;;
+        --anime | --tv | --movie) media="${1#--}" ;;
         -U | --update)
             dep_ch "patch"
             branch="${2:-$branch}"
@@ -565,8 +604,12 @@ done
 info "Checking dependencies..."
 dep_ch "sed"
 dep_ch "grep"
-[ "$skip_intro" = 1 ] && dep_ch "ani-skip"
 dep_ch "$menu_program" # TODO: use dep_ch_failover to iterate through options
+
+# anime stays here, tv shows and movies go to lobster
+choose_media
+
+[ "$skip_intro" = 1 ] && dep_ch "ani-skip"
 
 case "$player_function" in
     debug) ;;
