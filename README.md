@@ -66,7 +66,7 @@ If after this the issue persists then open an issue.
 ## Install
 
 The native packages, scoop and brew below install upstream ani-cli, which has no tv shows and movies.
-To get ani-cli-grokked with its bundled [lobster](#tv-shows-and-movies-lobster), [install from source](#installing-from-source).
+To get ani-cli-grokked with [tv shows and movies](#tv-shows-and-movies-lobster), [install from source](#installing-from-source).
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/ani-cli.svg?minversion=4.14)](https://repology.org/project/ani-cli/versions)
 
@@ -448,11 +448,13 @@ Install dependencies [(See below)](#dependencies)
 
 ```sh
 git clone --depth 1 "https://github.com/AnvayDev/ani-cli-grokked.git"
-sudo cp ani-cli-grokked/ani-cli ani-cli-grokked/lobster /usr/local/bin
+sudo cp ani-cli-grokked/ani-cli /usr/local/bin
 rm -rf ani-cli-grokked
+curl -sSfL https://raw.githubusercontent.com/billmal071/lobster/main/install.sh | sh
 ```
 
-On Termux copy both files into `$PREFIX/bin` (without sudo), on Steam Deck into `~/.local/bin`. On macOS lobster also needs GNU sed: `brew install gnu-sed`.
+The last line installs [lobster](https://github.com/billmal071/lobster), which plays tv shows and movies (Linux and macOS).
+If you installed ani-cli with Homebrew, run `brew uninstall ani-cli` first, otherwise Homebrew's older copy keeps running.
 
 ## Uninstall
 
@@ -540,7 +542,7 @@ apk del grep sed curl fzf git ffmpeg ncurses
 - fzf - User interface
 - ani-skip (optional, for auto-skipping anime intros)
 - patch - Self updating
-- lobster - TV shows and movies (bundled, on macOS it needs gnu-sed)
+- [lobster](https://github.com/billmal071/lobster) - TV shows and movies
 
 ### Ani-Skip
 
@@ -554,12 +556,12 @@ Ani-skip uses the external lua script function of mpv and as such â€“ for now â€
 
 ### TV shows and movies (lobster)
 
-Before searching, ani-cli asks whether you want to watch anime or a tv show or movie. Tv shows and movies are handed over to [lobster](https://github.com/justchokingaround/lobster), which ships next to ani-cli in this repo.
+Before searching, ani-cli asks whether you want to watch anime or a tv show or movie. Tv shows and movies are handed over to [lobster](https://github.com/billmal071/lobster), a maintained Go rewrite of the original lobster script. Install it with the last line under [Installing from source](#installing-from-source).
 
 - Skip the question with `--anime`, `--tv` or `--movie`, or set a default with `ANI_CLI_MEDIA=anime|tv|movie`. Anime-only options such as `-e` or `--dub` skip it too.
-- The search query, `-c`, `-d`, `-q`, `-s` and `--rofi` are passed on to lobster.
-- lobster keeps its own history and config (player, subtitle language, ...) in `~/.config/lobster/lobster_config.sh`.
-- Update lobster with `lobster -u`, `ani-cli -U` only updates ani-cli.
+- The search query, `-c` (lobster's own history), `-d` and `-q` are passed on to lobster. Without a query lobster opens its own browser.
+- lobster keeps its own history and config (player, quality, subtitle language, ...) in `~/.config/lobster/config.toml`.
+- Update lobster by running its install line again, `ani-cli -U` only updates ani-cli.
 
 ## FAQ
 <details>

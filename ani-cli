@@ -456,34 +456,17 @@ choose_media() {
     esac
 }
 
-# replaces ani-cli with lobster, translating the options both of them understand
+# replaces ani-cli with lobster (github.com/billmal071/lobster), translating the options both of them understand
 launch_lobster() {
-    # lobster ships next to ani-cli, one in PATH is the fallback
-    case "$0" in
-        */*) _self_dir="${0%/*}" ;;
-        *) _self_dir="." ;;
-    esac
-    lobster_exe=$(dep_ch_failover "${ANI_CLI_LOBSTER:+$ANI_CLI_LOBSTER,}$_self_dir/lobster,lobster") || die "Program lobster not found. It ships next to ani-cli, see the readme."
-    # downloading changes the working dir, so a relative path has to be pinned first
-    [ -e "$lobster_exe" ] && [ "${lobster_exe#/}" = "$lobster_exe" ] && lobster_exe="$PWD/$lobster_exe"
+    lobster_exe=$(dep_ch_failover "${ANI_CLI_LOBSTER:-lobster}") || die "Program lobster not found, it is needed for tv shows and movies. Install it from https://github.com/billmal071/lobster"
     set --
-    [ "$menu_program" = "rofi" ] && set -- "$@" --rofi
-    case "$player_function" in
-        *yncpla*) set -- "$@" -s ;;
-        # lobster takes the path after -d as the query, but saves to the current dir
-        download)
-            cd "$download_dir" || die "Can't enter download dir $download_dir"
-            set -- "$@" -d
-            ;;
-        *) ;;
-    esac
-    # lobster wants a bare resolution and picks the best stream on its own
+    [ "$player_function" = "download" ] && set -- "$@" -d "$download_dir"
+    # lobster wants a bare resolution, best and worst are left to its config
     _quality="${quality%p}"
     [ "$_quality" -eq "$_quality" ] 2>/dev/null && set -- "$@" -q "$_quality"
-    # lobster starts playing from history as soon as it reads -c, so it goes last
-    [ "$source" = "history" ] && exec "$lobster_exe" "$@" -c
-    # lobster opens its config editor when any argument contains "-e", and swaps spaces for dashes itself anyway
-    _lobster_query=$(printf "%s" "$query" | sed 's|[+-]| |g')
+    [ "$source" = "history" ] && exec "$lobster_exe" history "$@"
+    # ani-cli keeps spaces in the query as +
+    _lobster_query=$(printf "%s" "$query" | sed 's|+| |g')
     [ -n "$_lobster_query" ] && set -- "$@" -- "$_lobster_query"
     exec "$lobster_exe" "$@"
 }

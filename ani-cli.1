@@ -13,7 +13,7 @@ This tool scrapes the site hianime.
 .PD 0
 .P
 .PD
-Before searching it asks whether to watch anime or a tv show or movie, which are handed over to lobster (shipped next to ani-cli).
+Before searching it asks whether to watch anime or a tv show or movie, which are handed over to lobster (https://github.com/billmal071/lobster).
 .PD 0
 .P
 .PD
@@ -78,7 +78,7 @@ Exit the player, and return the player exit code (useful for non interactive sce
 Watch anime without being asked first.
 .TP
 \fB\--tv | --movie\fR
-Watch a tv show or movie without being asked first. The search query, -c, -d, -q, -s and --rofi are passed on to lobster.
+Watch a tv show or movie without being asked first. The search query, -c, -d and -q are passed on to lobster.
 .PP
 .SH
 ENVIRONMENT VARIABLES
@@ -131,7 +131,7 @@ Controls if the menu comes up after the player is spawned, potentially useful in
 Skips the question what to watch. Can be anime, tv or movie (tv and movie both start lobster). Anime-only options such as -e or --dub always mean anime. Default is to ask.
 .TP
 \fBANI_CLI_LOBSTER\fR
-Path to the lobster script used for tv shows and movies. Default is the lobster next to ani-cli, then the one in PATH.
+Path to lobster, used for tv shows and movies. Default is lobster in PATH.
 .PP
 .SH EPISODE SELECTION
 .PP
