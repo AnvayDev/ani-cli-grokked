@@ -561,7 +561,8 @@ Before searching, ani-cli asks whether you want to watch anime or a tv show or m
 - Skip the question with `--anime`, `--tv` or `--movie`, or set a default with `ANI_CLI_MEDIA=anime|tv|movie`. Anime-only options such as `-e` or `--dub` skip it too.
 - The search query, `-c` (lobster's own history), `-d` and `-q` are passed on to lobster. Without a query lobster opens its own browser.
 - lobster keeps its own history and config (player, quality, subtitle language, ...) in `~/.config/lobster/config.toml`.
-- Update lobster by running its install line again, `ani-cli -U` only updates ani-cli.
+- `ani-cli -U` updates both ani-cli (from this repo) and lobster (from its latest release).
+- Once a day ani-cli checks both and says when an update is available. Turn that off with `ANI_CLI_UPDATE_NOTICE=0`.
 
 ## FAQ
 <details>
