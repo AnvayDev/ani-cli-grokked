@@ -1,6 +1,6 @@
 #!/bin/sh
 
-version_number="5.2.0"
+version_number="5.3.0"
 
 # UI
 
@@ -41,6 +41,10 @@ die() {
 
 info() {
     printf "\33[2K\r\033[1;34m%s\033[0m\n" "$*"
+}
+
+warn() {
+    printf "\33[2K\r\033[1;33m%s\033[0m\n" "$*"
 }
 
 help_info() {
@@ -88,7 +92,7 @@ help_info() {
       -N, --nextep-countdown
         Display a countdown to the next episode
       -U, --update
-        Update the script
+        Update ani-cli and lobster
       --anime
         Watch anime without being asked first
       --tv, --movie
@@ -112,9 +116,63 @@ version_info() {
 
 # Bookkeeping
 
+# the latest ani-cli on github ($branch), extra curl flags in $@
+fetch_ani_cli() {
+    $curl_exe --fail-with-body -sL -A "$agent" "$@" "https://raw.githubusercontent.com/AnvayDev/ani-cli-grokked/$branch/ani-cli"
+}
+
+# the latest lobster release without its leading v, extra curl flags in $@
+lobster_latest() {
+    $curl_exe -sL -A "$agent" "$@" "$lobster_api" | sed -nE 's|.*"tag_name": *"v?([^"]+)".*|\1|p' | head -n 1
+}
+
+# version of the lobster at $1, empty for a dev build or the old lobster script (which would search for "version")
+lobster_version() {
+    _magic=$(head -c 2 "$1")
+    [ "$_magic" = "#!" ] && return 0
+    "$1" version 2>/dev/null | sed -nE 's|^lobster v?([0-9][0-9.]*)$|\1|p'
+}
+
+# lobster has no updater of its own, its install script always fetches the latest release
+update_lobster() {
+    if ! _lobster=$(command -v "${ANI_CLI_LOBSTER:-lobster}"); then
+        info "lobster is not installed, for tv shows and movies run: curl -sSfL $lobster_install | sh"
+        return 0
+    fi
+    _latest=$(lobster_latest)
+    [ -z "$_latest" ] && warn "Couldn't check lobster for updates" && return 0
+    _current=$(lobster_version "$_lobster")
+    [ "$_current" = "$_latest" ] && info "lobster is up to date :) ($_current)" && return 0
+    info "Updating lobster: ${_current:-unknown} -> $_latest"
+    ! $curl_exe -sSfL "$lobster_install" | sh && warn "lobster update failed" && return 0
+    # the installer writes /usr/local/bin/lobster, which may not be the one in use
+    _current=$(lobster_version "$_lobster")
+    [ "$_current" = "$_latest" ] || warn "$_lobster is still not $_latest, another lobster comes first in PATH"
+}
+
+# once a day, say when ani-cli or lobster have an update that -U would install
+update_notice() {
+    _stamp="$hist_dir/update-check"
+    _checked=$(find "$_stamp" -mtime -1 2>/dev/null)
+    [ -n "$_checked" ] && return 0
+    : >"$_stamp"
+    _updates=""
+    _latest=$(fetch_ani_cli --max-time 5 | sed -nE 's|^version_number="([^"]+)"$|\1|p')
+    [ -n "$_latest" ] && [ "$_latest" != "$version_number" ] && _updates="ani-cli $version_number -> $_latest"
+    if _lobster=$(command -v "${ANI_CLI_LOBSTER:-lobster}"); then
+        _latest=$(lobster_latest --max-time 5)
+        _current=$(lobster_version "$_lobster")
+        [ -n "$_latest" ] && [ "$_current" != "$_latest" ] && _updates="${_updates:+$_updates, }lobster ${_current:-unknown} -> $_latest"
+    fi
+    [ -n "$_updates" ] && warn "Update available: $_updates. Run ani-cli -U (with sudo if it's installed system-wide)"
+    return 0
+}
+
 update_script() {
+    # lobster first, ani-cli patching its own file is the last thing it does
+    update_lobster
     info "[branch:$branch] Checking for Update.."
-    update="$($curl_exe --fail-with-body -sL -A "$agent" "https://raw.githubusercontent.com/AnvayDev/ani-cli-grokked/$branch/ani-cli")" || die "[branch:$branch] Connection error: $update"
+    update="$(fetch_ani_cli)" || die "[branch:$branch] Connection error: $update"
     new_version="$(printf "%s" "$update" | sed -nE 's|^version_number="([^"]+)"$|\1|p')"
     [ -z "$new_version" ] && die "[branch:$branch] Invalid response."
     printf "%s" "$update" | grep -q "^version_number" || die "[branch:$branch] Invalid response."
@@ -478,6 +536,8 @@ base_api="https://hianime.at"
 search_api="${base_api}/search?keyword=%s"
 episodes_api="${base_api}/api/theme/episode/list/%s"
 servers_api="${base_api}/api/theme/episode/servers?episodeId=%s"
+lobster_api="https://api.github.com/repos/billmal071/lobster/releases/latest"
+lobster_install="https://raw.githubusercontent.com/billmal071/lobster/main/install.sh"
 ciphers='ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305'
 tls13_ciphers='TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256'
 agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -487,6 +547,7 @@ download_dir="${ANI_CLI_DOWNLOAD_DIR:-.}"
 log_episode="${ANI_CLI_LOG:-1}"
 quality="${ANI_CLI_QUALITY:-best}"
 media_default="${ANI_CLI_MEDIA:-}"
+notify_updates="${ANI_CLI_UPDATE_NOTICE:-1}"
 
 curl_exe=$(dep_ch_failover "curl_firefox135,curl_chrome136,curl_chrome116,curl_ff117,curl") || die "Program curl not found"
 
@@ -601,6 +662,7 @@ done
 [ "$menu_program" = "fzf" ] && menu_multi_flag="-m"
 [ "$menu_program" = "rofi" ] && menu_multi_flag="-multi-select"
 
+[ "$notify_updates" = 1 ] && update_notice
 info "Checking dependencies..."
 dep_ch "sed"
 dep_ch "grep"

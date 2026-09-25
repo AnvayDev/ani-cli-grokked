@@ -45,7 +45,7 @@ Set the video quality. Default quality is best.
 Watch anime together with friends, using Syncplay (works with mpv only).
 .TP
 \fB\-U | --update\fR \fI\,<branch>\/\fR
-Fetch update from github.
+Update ani-cli from github, and lobster to its latest release if it is installed.
 .TP
 \fB\-v | --vlc\fR
 Use VLC as the media player.
@@ -132,6 +132,9 @@ Skips the question what to watch. Can be anime, tv or movie (tv and movie both s
 .TP
 \fBANI_CLI_LOBSTER\fR
 Path to lobster, used for tv shows and movies. Default is lobster in PATH.
+.TP
+\fBANI_CLI_UPDATE_NOTICE\fR
+Controls the once-a-day check that says when ani-cli or lobster can be updated with -U. Can be 0 (disabled) or 1 (enabled). Default is 1.
 .PP
 .SH EPISODE SELECTION
 .PP
